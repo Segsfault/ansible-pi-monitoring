@@ -1,0 +1,31 @@
+- name: Fetch and unarchive node_exporter
+  unarchive:
+    src: 'https://github.com/prometheus/node_exporter/releases/download/v0.17.0/node_exporter-0.17.0.linux-armv7.tar.gz'
+    dest: "/usr/local/bin"
+    extra_opts: [node_exporter-0.17.0.linux-armv7/node_exporter, --strip-components=1]
+    remote_src: yes
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+
+- name: Configure supervisor for node_exporter
+  blockinfile:
+    path: /etc/supervisor/conf.d/node_exporter.conf
+    create: yes
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    block: |
+      [program:node_exporter]
+      command=/usr/local/bin/node_exporter
+      directory=/tmp
+      autostart=true
+      autorestart=true
+      startretries=3
+      stderr_logfile=/var/log/node_exporter.err.log
+      stdout_logfile=/var/log/node_exporter.out.log
+      user={{ ansible_user_id }}
+
+- name: Read in supervisor config
+  command: supervisorctl reread
+
+- name: Update supervisor config
+  command: supervisorctl update
