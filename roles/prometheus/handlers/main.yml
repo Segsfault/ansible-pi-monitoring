@@ -1,0 +1,3 @@
+- name: Restart Grafana
+  become: true
+  command: supervisorctl restart prometheus
