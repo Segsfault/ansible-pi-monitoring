@@ -1,0 +1,31 @@
+- name: Fetch and unarchive rpi_exporter
+  unarchive:
+    src: 'https://github.com/lukasmalkmus/rpi_exporter/releases/download/v0.4.0/rpi_exporter-0.4.0.linux-armv7.tar.gz'
+    dest: "/usr/local/bin"
+    extra_opts: [rpi_exporter-0.4.0.linux-armv7/rpi_exporter, --strip-components=1]
+    remote_src: yes
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+
+- name: Configure supervisor for rpi_exporter
+  blockinfile:
+    path: /etc/supervisor/conf.d/rpi_exporter.conf
+    create: yes
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    block: |
+      [program:rpi_exporter]
+      command=/usr/local/bin/rpi_exporter
+      directory=/tmp
+      autostart=true
+      autorestart=true
+      startretries=3
+      stderr_logfile=/var/log/rpi_exporter.err.log
+      stdout_logfile=/var/log/rpi_exporter.out.log
+      user={{ ansible_user_id }}
+
+- name: Read in supervisor config
+  command: supervisorctl reread
+
+- name: Update supervisor config
+  command: supervisorctl update

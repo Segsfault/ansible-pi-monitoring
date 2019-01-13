@@ -1,0 +1,50 @@
+---
+- name: Install package "adduser"
+  apt:
+    name: adduser
+    state: present
+
+- name: Install package "libfontconfig"
+  apt:
+    name: libfontconfig
+    state: present
+
+- name: ensure directory for unpacking exists
+  file:
+    path: /opt/grafana
+    state: directory
+
+- name: Fetch and unarchive grafana
+  unarchive:
+    src: 'https://dl.grafana.com/oss/release/grafana-5.4.2.linux-armv7.tar.gz '
+    dest: '/opt/grafana'
+    extra_opts: [--strip-components=1]
+    remote_src: yes
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+
+- name: Configure grafana for grafana
+  blockinfile:
+    path: /etc/supervisor/conf.d/grafana.conf
+    create: yes
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_id }}"
+    block: |
+      [program:grafana]
+      command=/opt/grafana/bin/grafana-server
+      directory=/opt/grafana
+      autostart=true
+      autorestart=true
+      startretries=3
+      stderr_logfile=/var/log/grafana.err.log
+      stdout_logfile=/var/log/grafana.out.log
+      user={{ ansible_user_id }}
+
+
+- name: Read in supervisor config
+  command: supervisorctl reread
+
+- name: Update supervisor config
+  command: supervisorctl update
+
+
